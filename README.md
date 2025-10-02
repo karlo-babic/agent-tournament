@@ -16,14 +16,15 @@ Welcome to the AI Agent Tournament! Your task is to design and implement an arti
 There are two ways to win the game:
 1.  Capture the enemy flag and bring it back to your own team's flag.
 2.  Kill all enemy agents.
+3.  The game ends in a tie if the maximum time limit is reached.
 
 ## The `Agent` Class
 
-You will be implementing your logic within the `Agent` class. It has the following methods:
+You will be implementing your logic within the `Agent` class in a file named `agent.py`. It has the following methods:
 
--   `__init__(self)`
+-   `__init__(self, color, index)`
     -   Called once when your agent is instanced at the beginning of the game. Use it for any initial setup.
--   `update(self, visible_world, position, can_shoot, holding_flag)`
+-   `update(self, visible_world, position, can_shoot, holding_flag, shared_knowledge)`
     -   Called every "agent frame" or tick. This is where your agent's core logic will go.
 -   `terminate(self, reason)`
     -   Called once when this agent is deleted (either because it died, or the game ended).
@@ -69,6 +70,11 @@ The `update` method receives the following arguments on every call:
 -   `holding_flag`
     -   A `boolean`. `True` if your agent is currently holding the enemy flag.
 
+-   `shared_knowledge`
+    -   A Python `dictionary` that is shared between all agents on your team.
+    -   You can read from and write to this dictionary to communicate and coordinate strategy. For example, you can store the enemy flag's last known position, assign roles, or signal for help.
+    -   This dictionary is reset at the beginning of each game.
+
 ### `Agent.update` Expected Return Values (Outputs)
 
 Your `update` method must return two values: an action and a direction.
@@ -86,18 +92,41 @@ Your `update` method must return two values: an action and a direction.
 
 ## Usage Instructions
 
-1.  **Code your agent** in `blue_agent.py` and/or `red_agent.py`. You are free to create other `.py` files/modules and import them into your agent implementation. **Do not change any other existing files.**
-2.  The implemented agent should be **functional as both a blue and red agent**, as your code will be used for both teams during the tournament.
-3.  **Start the simulation** with the command:
+1.  **Create a folder for your agent** (e.g., `my_team`).
+2.  **Inside this folder, create a file named `agent.py`**. This file must contain your `Agent` class implementation.
+3.  You are free to create other `.py` files/modules inside your team folder and import them into `agent.py`.
+4.  **Start a simulation** with the command:
     ```bash
-    python main.py
+    python main.py path/to/blue/team/folder path/to/red/team/folder
     ```
+    For example:
+    ```bash
+    python main.py my_team other_team
+    ```
+5.  To run the simulation much faster without the graphical display (headless mode), use the `--headless` flag:
+    ```bash
+    python main.py my_team other_team --headless
+    ```
+
+### Example Project Structure
+```
+tournament_project/
+├── main.py
+├── tournament.py
+├── config.py
+├── sprites/
+│   ├── ... (image files)
+├── my_team/
+│   ├── agent.py          # <-- Your main agent code here
+│   └── pathfinding.py    # <-- Optional helper module
+└── other_team/
+    └── agent.py          # <-- Another agent's code
+```
 
 ### For Testing Purposes
 
-You can modify the following for easier testing:
--   Modify `config.py` to change world height, width, and tick rate.
--   Comment out `world.ascii_display()` in `main.py` to disable the console display.
+-   Modify `config.py` to change world height, width, tick rate, and other game parameters.
+-   Match results are automatically logged to `results.csv`.
 
 ## Implementation Guidelines & Ideas
 
@@ -110,12 +139,15 @@ You are encouraged to use any/all means to implement a good agent. Some ideas in
 
 > **LIMITATION:** Your agent must be able to run on the classroom computers without significant performance issues.
 
+### Designing a Universal Agent
+Your agent code must be able to function correctly whether it is assigned to the blue or red team. Avoid hardcoding behavior based on color (e.g., `if self.color == "blue": move_right()`).
+
+A robust approach is to set team-specific variables in your `__init__` method based on the `color` argument provided. These variables can define your "enemy," "home," and preferred directions for attacking and defending. Your `update` method should then use these variables to make decisions. This makes your agent's logic abstract and reusable.
+
 ## Submission
 
-You will need to upload a single `.zip` file containing:
+You will need to upload a single `.zip` file of your **team folder** (`firstnames_lastnames.zip`). It must contain:
 
--   **`blue_agent.py` and `red_agent.py`**
-    -   Both files should contain the same agent implementation.
-    -   Include a short description of your agent's approach, strategy, and implementation as a comment at the beginning of each file.
--   **Other `.py` files (modules)** you might have created and used in your agent implementation.
--   **A short presentation (5 minutes)**, saved as a PDF file, explaining your approach, strategy, and implementation. Do not explain the code line-by-line; focus on the high-level concepts.
+-   **`agent.py`** with your `Agent` class.
+-   Any other `.py` files (modules) you created and used.
+-   A short presentation (5 minutes), saved as a PDF file, explaining your approach.

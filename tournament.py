@@ -1,27 +1,29 @@
-from blue_agent import Agent as B_agent
-from red_agent import Agent as R_agent
-from config import *
-
 import time
 import random
 import copy
-
+from config import *
 
 class World:
 
-    def __init__(self, height, width, tick_rate):
+    def __init__(self, height, width, tick_rate, blue_agent_class, red_agent_class, headless=False):
         self.height = height
         self.width = width
         self.tick_rate = tick_rate
+        self.blue_agent_class = blue_agent_class
+        self.red_agent_class = red_agent_class
+        self.headless = headless
         
         self.tick = 0
         self.worldmap = None
         self.worldmap_buffer = None
-        self.win = ""
+        self.win = None # Becomes a tuple (winner, reason)
         
         self.agents = []
         self.flags = []
         self.bullets = []
+        
+        self.blue_shared_knowledge = {}
+        self.red_shared_knowledge = {}
     
     def _clear_area(self, x, y):
         for yi in [-1, 0, 1]:
@@ -81,11 +83,11 @@ class World:
         self._clear_area(flag_x, flag_y)
         self.flags.append( Flag("blue", (flag_x, flag_y)) )
 
-        self.agents.append( AgentEngine("blue", (flag_x + 2, flag_y)) )
+        self.agents.append( AgentEngine("blue", (flag_x + 2, flag_y), self.blue_agent_class) )
         self._clear_area(flag_x + 2, flag_y)
-        self.agents.append( AgentEngine("blue", (flag_x, flag_y + 2)) )
+        self.agents.append( AgentEngine("blue", (flag_x, flag_y + 2), self.blue_agent_class) )
         self._clear_area(flag_x, flag_y + 2)
-        self.agents.append( AgentEngine("blue", (flag_x, flag_y - 2)) )
+        self.agents.append( AgentEngine("blue", (flag_x, flag_y - 2), self.blue_agent_class) )
         self._clear_area(flag_x, flag_y - 2)
 
         flag_x = random.randint(self.width - 6, self.width - 4)
@@ -94,11 +96,11 @@ class World:
         self._clear_area(flag_x, flag_y)
         self.flags.append( Flag("red", (flag_x, flag_y)) )
 
-        self.agents.append( AgentEngine("red", (flag_x - 2, flag_y)) )
+        self.agents.append( AgentEngine("red", (flag_x - 2, flag_y), self.red_agent_class) )
         self._clear_area(flag_x - 2, flag_y)
-        self.agents.append( AgentEngine("red", (flag_x, flag_y + 2)) )
+        self.agents.append( AgentEngine("red", (flag_x, flag_y + 2), self.red_agent_class) )
         self._clear_area(flag_x, flag_y + 2)
-        self.agents.append( AgentEngine("red", (flag_x, flag_y - 2)) )
+        self.agents.append( AgentEngine("red", (flag_x, flag_y - 2), self.red_agent_class) )
         self._clear_area(flag_x, flag_y - 2)
 
         self._clear_random_path(flag_blue_pos, flag_red_pos)
@@ -112,13 +114,14 @@ class World:
                 self.worldmap_buffer[flag.position[1]][flag.position[0]] = flag.ascii_tile
 
     def ascii_display(self):
-        #os.system("clear")  # linux: "clear", windows: "cls"
         print("\n" + "=="*len(self.worldmap_buffer[0]) + "=\n")
         for row in self.worldmap_buffer:
             print(" " + " ".join(row))
 
     def iter(self):
-        time.sleep(self.tick_rate)
+        # Do not sleep in headless mode to run simulation as fast as possible
+        if not self.headless:
+            time.sleep(self.tick_rate)
         self.tick += 1
     
     def update_agents(self):
@@ -135,6 +138,7 @@ class World:
                 del self.bullets[i]
     
     def check_win_state(self):
+        if self.win: return
         blue_count = 0
         red_count = 0
         for agent in self.agents:
@@ -142,20 +146,22 @@ class World:
                 blue_count += 1
             elif agent.color == "red":
                 red_count += 1
+        
         if blue_count == 0 and red_count == 0:
-            self.win = "tied"
+            self.win = ("tied", "mutual_elimination")
         elif red_count == 0:
-            self.win = "blue"
+            self.win = ("blue", "elimination")
         elif blue_count == 0:
-            self.win = "red"
+            self.win = ("red", "elimination")
+        elif self.tick >= MAX_TICKS:
+            self.win = ("tied", "timeout")
     
     def terminate_agents(self):
         for agent in self.agents:
-            agent.terminate(reason = self.win)
+            agent.terminate(reason = self.win[0])
 
 
 class Flag:
-
     def __init__(self, color, position):
         self.color = color
         self.position = position
@@ -168,14 +174,12 @@ class Flag:
 
 
 class Bullet:
-
     def __init__(self, agent, direction):
         self.color = agent.color
         self.direction = direction
         self.position = agent.position
         self.ascii_tile = ASCII_TILES["bullet"]
     
-    # bullet movement and collision (with walls or players)
     def update(self, worldmap_buffer, agents):
         for i in range(len(agents)-1, -1, -1):
             if agents[i].position == self.position and agents[i].color != self.color:
@@ -195,9 +199,8 @@ class Bullet:
                 return True
         return False
 
-
-# returns coordinates of tiles between two locations (line of sight)
 def _bresenham_line(x1, y1, x2, y2):
+    """Yields coordinates of tiles between two locations (line of sight)."""
     dx = abs(x2 - x1)
     dy = abs(y2 - y1)
     sx = 1 if x1 <= x2 else -1
@@ -216,33 +219,30 @@ def _bresenham_line(x1, y1, x2, y2):
             err += dx
             y1 += sy
 
-
 class AgentEngine:
-
     blue_index = 0
     red_index = 0
 
-    def __init__(self, color, position):
+    def __init__(self, color, position, agent_class):
         self.color = color
         self.position = position
         self.prev_position = self.position
         
         self.can_shoot = True
         self.can_shoot_countdown = 0
-        self.CAN_SHOOT_DELAY = 4
         
         self.holding_flag = None
 
         if self.color == "blue":
             self.index = AgentEngine.blue_index
             AgentEngine.blue_index += 1
-            self.agent = B_agent(self.color, self.index)
             self.ascii_tile = ASCII_TILES["blue_agent"]
         elif self.color == "red":
             self.index = AgentEngine.red_index
             AgentEngine.red_index += 1
-            self.agent = R_agent(self.color, self.index)
             self.ascii_tile = ASCII_TILES["red_agent"]
+        
+        self.agent = agent_class(self.color, self.index)
             
     def terminate(self, reason):
         if self.holding_flag:
@@ -250,86 +250,97 @@ class AgentEngine:
         self.agent.terminate(reason)
     
     def get_visible_world(self, world):
-        max_distance = 4
         visible_world = []
         
-        ## the square of world within max_distance of the agent
-        for y in range(0, max_distance*2+1):
-            y_world = self.position[1] + y - max_distance
+        for y in range(0, AGENT_VISION_RANGE*2+1):
+            y_world = self.position[1] + y - AGENT_VISION_RANGE
             visible_world.append([])
-            for x in range(0, max_distance*2+1):
-                x_world = self.position[0] + x - max_distance
-                if x_world >= 0 and x_world < world.width and y_world >= 0 and y_world < world.height:
+            for x in range(0, AGENT_VISION_RANGE*2+1):
+                x_world = self.position[0] + x - AGENT_VISION_RANGE
+                if 0 <= x_world < world.width and 0 <= y_world < world.height:
                     visible_world[-1].append(world.worldmap_buffer[y_world][x_world])
                 else:
                     visible_world[-1].append(ASCII_TILES["unknown"])
                     
-        ## obstructed vision of the world - line of sight
-        agent_x, agent_y = max_distance, max_distance
+        agent_x, agent_y = AGENT_VISION_RANGE, AGENT_VISION_RANGE
         for y in range(len(visible_world)):
             for x in range(len(visible_world[0])):
                 for x_online, y_online in _bresenham_line(agent_x, agent_y, x, y):
-                    tile = visible_world[y_online][x_online]
-                    if tile == ASCII_TILES["wall"]:
+                    if visible_world[y_online][x_online] == ASCII_TILES["wall"]:
                         visible_world[y][x] = ASCII_TILES["unknown"]
                         break
-        
         return visible_world
     
-    # controlling movement and shooting from blue_agent.py and red_agent.py
+    def _handle_movement(self, direction):
+        self.prev_position = self.position
+        x, y = self.position
+        if   direction == "right": self.position = (x+1, y)
+        elif direction == "left":  self.position = (x-1, y)
+        elif direction == "up":    self.position = (x, y-1)
+        elif direction == "down":  self.position = (x, y+1)
+        self.can_shoot = False
+        self.can_shoot_countdown = SHOOT_COOLDOWN
+
+    def _handle_shooting(self, world, direction):
+        if   direction == "right": world.bullets.append( Bullet(self, direction=(1, 0)) )
+        elif direction == "left":  world.bullets.append( Bullet(self, direction=(-1, 0)) )
+        elif direction == "up":    world.bullets.append( Bullet(self, direction=(0, -1)) )
+        elif direction == "down":  world.bullets.append( Bullet(self, direction=(0, 1)) )
+        self.can_shoot = False
+        self.can_shoot_countdown = SHOOT_COOLDOWN
+
     def control(self, world):
-        action, direction = self.agent.update(self.get_visible_world(world), self.position, self.can_shoot, self.holding_flag)
+        knowledge_base = world.blue_shared_knowledge if self.color == "blue" else world.red_shared_knowledge
+        
+        action, direction = self.agent.update(
+            self.get_visible_world(world), 
+            self.position, 
+            self.can_shoot, 
+            self.holding_flag,
+            knowledge_base
+        )
 
         if action == "move":
-            self.prev_position = self.position
-            x = self.position[0]
-            y = self.position[1]
-            if   direction == "right": self.position = (x+1, y)
-            elif direction == "left":  self.position = (x-1, y)
-            elif direction == "up":    self.position = (x, y-1)
-            elif direction == "down":  self.position = (x, y+1)
-            self.can_shoot = False
-            self.can_shoot_countdown = self.CAN_SHOOT_DELAY
+            self._handle_movement(direction)
         elif action == "shoot" and self.can_shoot:
-            if   direction == "right": world.bullets.append( Bullet(self, direction=(1, 0)) )
-            elif direction == "left":  world.bullets.append( Bullet(self, direction=(-1, 0)) )
-            elif direction == "up":    world.bullets.append( Bullet(self, direction=(0, -1)) )
-            elif direction == "down":  world.bullets.append( Bullet(self, direction=(0, 1)) )
-            self.can_shoot = False
-            self.can_shoot_countdown = self.CAN_SHOOT_DELAY
+            self._handle_shooting(world, direction)
     
-    def collision(self, world):
-        x = self.position[0]
-        y = self.position[1]
-        
-        # collision with walls
+    def _check_wall_collision(self, world):
+        x, y = self.position
         if world.worldmap[y][x] == ASCII_TILES["wall"]:
             self.position = self.prev_position
+            return True
+        return False
+
+    def _check_flag_interaction(self, world):
+        x, y = self.position
         
-        # flag capturing / collision
-        elif self.color == "blue":
-            if world.worldmap_buffer[y][x] == ASCII_TILES["red_flag"] and not world.flags[1].agent_holding:
-                self.holding_flag = world.flags[1]
-                world.flags[1].agent_holding = self
-                self.ascii_tile = ASCII_TILES["blue_agent_f"]
-            elif world.worldmap_buffer[y][x] == ASCII_TILES["blue_flag"]:
-                if self.holding_flag:
-                    world.win = "blue"
-                else:  # collision
-                    self.position = self.prev_position
-                
-        elif self.color == "red":
-            if world.worldmap_buffer[y][x] == ASCII_TILES["blue_flag"] and not world.flags[0].agent_holding:
-                self.holding_flag = world.flags[0]
-                world.flags[0].agent_holding = self
-                self.ascii_tile = ASCII_TILES["red_agent_f"]
-            elif world.worldmap_buffer[y][x] == ASCII_TILES["red_flag"]:
-                if self.holding_flag:
-                    world.win = "red"
-                else:  # collision
-                    self.position = self.prev_position
-    
-    # shooting cooldown
+        # Determine friendly and enemy flag details
+        if self.color == "blue":
+            enemy_flag_tile, friendly_flag_tile = ASCII_TILES["red_flag"], ASCII_TILES["blue_flag"]
+            enemy_flag_obj = world.flags[1]
+        else: # red
+            enemy_flag_tile, friendly_flag_tile = ASCII_TILES["blue_flag"], ASCII_TILES["red_flag"]
+            enemy_flag_obj = world.flags[0]
+
+        # Pick up enemy flag
+        if world.worldmap_buffer[y][x] == enemy_flag_tile and not enemy_flag_obj.agent_holding:
+            self.holding_flag = enemy_flag_obj
+            enemy_flag_obj.agent_holding = self
+            self.ascii_tile = ASCII_TILES["blue_agent_f"] if self.color == "blue" else ASCII_TILES["red_agent_f"]
+        
+        # Interact with friendly flag
+        elif world.worldmap_buffer[y][x] == friendly_flag_tile:
+            if self.holding_flag:
+                world.win = (self.color, "flag_capture")
+            else: # collision
+                self.position = self.prev_position
+
+    def collision(self, world):
+        if self._check_wall_collision(world):
+            return
+        self._check_flag_interaction(world)
+
     def update_can_shoot(self):
         if not self.can_shoot and self.can_shoot_countdown > 0:
             self.can_shoot_countdown -= 1

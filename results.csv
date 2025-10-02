@@ -1,0 +1,5 @@
+blue_agent,red_agent,tied,timeout
+my_team,red_team,tied,timeout
+my_team,.\other_team\,tied,timeout
+my_team,other_team,tied,timeout
+my_team,other_team,tied,timeout
