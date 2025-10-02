@@ -144,6 +144,21 @@ tournament_project/
 -   Modify `config.py` to change world height, width, tick rate, and other game parameters.
 -   Match results are automatically logged to `results.csv`.
 
+### For Testing: Human-Controlled Agent
+
+A special `human_player/agent.py` is available for testing purposes. This allows you to directly control one of your team's agents (the one with `index=0`) while the other two agents on the team operate with the standard AI logic. This is an excellent way to test your AI's behavior, experiment with strategies, or simply understand the game mechanics better.
+
+**Controls:**
+-   **Movement:** `W`, `A`, `S`, `D` keys
+-   **Shooting:** `Up`, `Down`, `Left`, `Right` arrow keys
+
+**Usage:**
+To play as the blue team's lead agent against an AI opponent, run the simulation with the `human_player` folder:
+```bash
+python main.py human_player other_team
+```
+> **Note:** The human-controlled agent requires the graphical interface to read keyboard input. You cannot use the `--headless` and/or `--ascii` flags when playing.
+
 ## Implementation Guidelines & Ideas
 
 You are encouraged to use any/all means to implement a good agent. Some ideas include:

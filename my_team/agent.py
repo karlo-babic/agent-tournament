@@ -40,7 +40,7 @@ class Agent:
             preferred_direction = self.attack_direction
 
         # A simple agent that prioritizes survival and resupply
-        if hp < AGENT_MAX_HP / 2 or ammo == 0:
+        if hp == 1 or ammo == 0:
             # If low on health or out of ammo, retreat towards home base
             action = "move"
             preferred_direction = self.return_direction

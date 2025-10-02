@@ -2,7 +2,7 @@
 HEIGHT = 24
 WIDTH = 32
 TICK_RATE = 0.01  # Lower is faster
-MAX_TICKS = 3000  # Game ends in a tie after this many ticks
+MAX_TICKS = 6000  # Game ends in a tie after this many ticks
 
 # Update intervals (in ticks)
 AGENT_UPDATE_INTERVAL = 5
