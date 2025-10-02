@@ -1,17 +1,19 @@
 import time
 import random
 import copy
+import os
 from config import *
 
 class World:
 
-    def __init__(self, height, width, tick_rate, blue_agent_class, red_agent_class, headless=False):
+    def __init__(self, height, width, tick_rate, blue_agent_class, red_agent_class, headless=False, ascii_mode=False):
         self.height = height
         self.width = width
         self.tick_rate = tick_rate
         self.blue_agent_class = blue_agent_class
         self.red_agent_class = red_agent_class
         self.headless = headless
+        self.ascii_mode = ascii_mode
         
         self.tick = 0
         self.worldmap = None
@@ -114,13 +116,16 @@ class World:
                 self.worldmap_buffer[flag.position[1]][flag.position[0]] = flag.ascii_tile
 
     def ascii_display(self):
-        print("\n" + "=="*len(self.worldmap_buffer[0]) + "=\n")
+        os.system('cls' if os.name == 'nt' else 'clear')
+        print(f"Tick: {self.tick}")
+        print("=="*len(self.worldmap_buffer[0]) + "=\n")
         for row in self.worldmap_buffer:
             print(" " + " ".join(row))
 
     def iter(self):
-        # Do not sleep in headless mode to run simulation as fast as possible
-        if not self.headless:
+        # Sleep to control simulation speed for visualization (GUI or ASCII).
+        # In pure headless mode (no GUI, no ASCII), run as fast as possible.
+        if not self.headless or self.ascii_mode:
             time.sleep(self.tick_rate)
         self.tick += 1
     

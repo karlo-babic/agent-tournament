@@ -107,6 +107,10 @@ Your `update` method must return two values: an action and a direction.
     ```bash
     python main.py my_team other_team --headless
     ```
+6.  To display an ASCII rendering of the game in the console, use the `--ascii` flag. This is particularly useful when running in headless mode.
+    ```bash
+    python main.py my_team other_team --headless --ascii
+    ```
 
 ### Example Project Structure
 ```

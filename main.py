@@ -95,7 +95,7 @@ def main(args):
         running = True
     
     # World setup
-    world = World(HEIGHT, WIDTH, TICK_RATE, blue_agent_class, red_agent_class, headless=args.headless)
+    world = World(HEIGHT, WIDTH, TICK_RATE, blue_agent_class, red_agent_class, headless=args.headless, ascii_mode=args.ascii)
     world.generate_world()
 
     while not world.win:
@@ -108,6 +108,9 @@ def main(args):
             world.update_bullets()
             
         world.iter()
+
+        if args.ascii:
+            world.ascii_display()
 
         if not args.headless:
             render_world(world, screen, sprite_group, sprites)
@@ -134,5 +137,6 @@ if __name__ == "__main__":
     parser.add_argument("blue_team_folder", help="Path to the folder containing the blue team's agent.py")
     parser.add_argument("red_team_folder", help="Path to the folder containing the red team's agent.py")
     parser.add_argument("--headless", "-H", action="store_true", help="Run simulation without GUI for faster execution")
+    parser.add_argument("--ascii", "-A", action="store_true", help="Display ASCII rendering in the console")
     args = parser.parse_args()
     main(args)
