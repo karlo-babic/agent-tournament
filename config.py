@@ -16,7 +16,7 @@ AGENT_MAX_AMMO = 5
 
 # Healing and Resupply
 HEAL_RESUPPLY_RATE = 20 # Ticks between each heal/resupply tick
-HEAL_RESUPPLY_RANGE = 2 # Manhattan distance from flag spawn to heal/resupply
+HEAL_RESUPPLY_RANGE = 3 # Manhattan distance from flag spawn to heal/resupply
 
 # Tile representations
 ASCII_TILES = {
