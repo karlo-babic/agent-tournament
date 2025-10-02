@@ -157,7 +157,7 @@ To play as the blue team's lead agent against an AI opponent, run the simulation
 ```bash
 python main.py human_player other_team
 ```
-> **Note:** The human-controlled agent requires the graphical interface to read keyboard input. You cannot use the `--headless` and/or `--ascii` flags when playing.
+> **Note:** The human-controlled agent requires the graphical interface to read keyboard input. You cannot use the `--headless` flag when playing.
 
 ## Implementation Guidelines & Ideas
 
