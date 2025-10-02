@@ -130,11 +130,26 @@ class World:
         self.tick += 1
     
     def update_agents(self):
+        # Agents decide and perform actions
         for agent in self.agents:
             agent.control(self)
+        
+        # Agents handle collisions with walls/flags and update their cooldowns
         for agent in self.agents:
             agent.collision(self)
             agent.update_can_shoot()
+
+        # Agents heal and resupply if near their home flag spawn point
+        if self.tick % HEAL_RESUPPLY_RATE == 0:
+            for agent in self.agents:
+                agent.heal_and_resupply(self)
+
+        # Remove dead agents from the game
+        for i in range(len(self.agents)-1, -1, -1):
+            agent = self.agents[i]
+            if agent.hp <= 0:
+                agent.terminate(reason = "died")
+                del self.agents[i]
     
     def update_bullets(self):
         for i in range(len(self.bullets)-1, -1, -1):
@@ -169,6 +184,8 @@ class World:
 class Flag:
     def __init__(self, color, position):
         self.color = color
+        # The original spawn position of the flag, used for healing/resupply zones.
+        self.spawn_position = position
         self.position = position
         self.agent_holding = None
 
@@ -186,22 +203,20 @@ class Bullet:
         self.ascii_tile = ASCII_TILES["bullet"]
     
     def update(self, worldmap_buffer, agents):
-        for i in range(len(agents)-1, -1, -1):
-            if agents[i].position == self.position and agents[i].color != self.color:
-                agents[i].terminate(reason = "died")
-                del agents[i]
-                return True
-                
+        # Move the bullet one step
         self.position = (self.position[0] + self.direction[0], self.position[1] + self.direction[1])
         
+        # Check for collision with an enemy agent at the new position
+        for agent in agents:
+            if agent.position == self.position and agent.color != self.color:
+                agent.take_damage(1)
+                return True # Hit confirmed, bullet is destroyed
+                
+        # Check for collision with a wall
         tile = worldmap_buffer[self.position[1]][self.position[0]]
         if tile == ASCII_TILES["wall"]:
-            return True
-        for i in range(len(agents)-1, -1, -1):
-            if agents[i].position == self.position and agents[i].color != self.color:
-                agents[i].terminate(reason = "died")
-                del agents[i]
-                return True
+            return True # Hit a wall, bullet is destroyed
+            
         return False
 
 def _bresenham_line(x1, y1, x2, y2):
@@ -233,6 +248,9 @@ class AgentEngine:
         self.position = position
         self.prev_position = self.position
         
+        self.hp = AGENT_MAX_HP
+        self.ammo = AGENT_MAX_AMMO
+        
         self.can_shoot = True
         self.can_shoot_countdown = 0
         
@@ -254,6 +272,26 @@ class AgentEngine:
             self.holding_flag.agent_holding = None
         self.agent.terminate(reason)
     
+    def take_damage(self, amount):
+        """Reduces the agent's health."""
+        self.hp -= amount
+    
+    def heal_and_resupply(self, world):
+        """Heals HP and restores ammo if the agent is near its home flag."""
+        home_flag = world.flags[0] if self.color == "blue" else world.flags[1]
+        flag_pos = home_flag.spawn_position
+        
+        # Calculate Manhattan distance to the flag's spawn point
+        distance = abs(self.position[0] - flag_pos[0]) + abs(self.position[1] - flag_pos[1])
+        
+        if distance <= HEAL_RESUPPLY_RANGE:
+            # Heal one HP if not at max
+            if self.hp < AGENT_MAX_HP:
+                self.hp += 1
+            # Restore one ammo if not at max
+            if self.ammo < AGENT_MAX_AMMO:
+                self.ammo += 1
+
     def get_visible_world(self, world):
         visible_world = []
         
@@ -291,6 +329,7 @@ class AgentEngine:
         elif direction == "left":  world.bullets.append( Bullet(self, direction=(-1, 0)) )
         elif direction == "up":    world.bullets.append( Bullet(self, direction=(0, -1)) )
         elif direction == "down":  world.bullets.append( Bullet(self, direction=(0, 1)) )
+        self.ammo -= 1
         self.can_shoot = False
         self.can_shoot_countdown = SHOOT_COOLDOWN
 
@@ -298,18 +337,20 @@ class AgentEngine:
         knowledge_base = world.blue_shared_knowledge if self.color == "blue" else world.red_shared_knowledge
         
         action, direction = self.agent.update(
-            self.get_visible_world(world), 
-            self.position, 
-            self.can_shoot, 
+            self.get_visible_world(world),
+            self.position,
+            self.can_shoot,
             self.holding_flag,
-            knowledge_base
+            knowledge_base,
+            self.hp,
+            self.ammo
         )
 
         if action == "move":
             self._handle_movement(direction)
-        elif action == "shoot" and self.can_shoot:
+        elif action == "shoot" and self.can_shoot and self.ammo > 0:
             self._handle_shooting(world, direction)
-    
+
     def _check_wall_collision(self, world):
         x, y = self.position
         if world.worldmap[y][x] == ASCII_TILES["wall"]:

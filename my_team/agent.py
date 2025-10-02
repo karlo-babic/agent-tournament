@@ -32,21 +32,27 @@ class Agent:
             self.attack_direction = "left"
             self.return_direction = "right"
 
-    def update(self, visible_world, position, can_shoot, holding_flag, shared_knowledge):
-        # Simple random agent logic
-        if can_shoot:
-            action = "shoot"
-        elif random.random() > 0.3:
-            action = ""  # do nothing
-        else:
-            action = "move"
-        
+    def update(self, visible_world, position, can_shoot, holding_flag, shared_knowledge, hp, ammo):
         # Determine preferred direction based on state (holding flag or not)
         if holding_flag:
             preferred_direction = self.return_direction
         else:
             preferred_direction = self.attack_direction
-        
+
+        # A simple agent that prioritizes survival and resupply
+        if hp < AGENT_MAX_HP / 2 or ammo == 0:
+            # If low on health or out of ammo, retreat towards home base
+            action = "move"
+            preferred_direction = self.return_direction
+        else:
+            # Otherwise, follow the random logic
+            if can_shoot and random.random() > 0.9:
+                action = "shoot"
+            elif random.random() > 0.3:
+                action = ""  # do nothing
+            else:
+                action = "move"
+    
         # Randomly choose a direction, with a bias towards the preferred direction
         r = random.random() * 1.5
         if r < 0.25:

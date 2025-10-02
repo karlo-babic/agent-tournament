@@ -18,6 +18,12 @@ There are two ways to win the game:
 2.  Kill all enemy agents.
 3.  The game ends in a tie if the maximum time limit is reached.
 
+## Core Game Mechanics
+
+-   **Health (HP):** Agents start with 3 HP and are eliminated when their HP reaches 0. Each bullet hit deals 1 damage.
+-   **Ammunition:** Agents start with 5 bullets. Firing a shot consumes one bullet.
+-   **Healing & Resupply:** When an agent is within a 3-tile radius of its own flag's original spawn point, it will regain 1 HP and 1 ammo periodically. This allows agents to retreat, recover, and re-engage.
+
 ## The `Agent` Class
 
 You will be implementing your logic within the `Agent` class in a file named `agent.py`. It has the following methods:
@@ -74,6 +80,12 @@ The `update` method receives the following arguments on every call:
     -   A Python `dictionary` that is shared between all agents on your team.
     -   You can read from and write to this dictionary to communicate and coordinate strategy. For example, you can store the enemy flag's last known position, assign roles, or signal for help.
     -   This dictionary is reset at the beginning of each game.
+
+-   `hp`
+    -   An `integer` representing your agent's current health points.
+
+-   `ammo`
+    -   An `integer` representing your agent's current ammunition count.
 
 ### `Agent.update` Expected Return Values (Outputs)
 
