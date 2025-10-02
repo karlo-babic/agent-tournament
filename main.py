@@ -79,7 +79,7 @@ def main():
         if (world.tick+1) % 5 == 0:
             world.update_bullets()
         world.iter()
-        #world.ascii_display()
+        world.ascii_display()
         handle_pygame(world)
     
     world.terminate_agents()
