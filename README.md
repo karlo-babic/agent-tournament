@@ -1,9 +1,3 @@
-Of course! Here is the README file formatted in standard Markdown, using hyphens for bullet points and including placeholders for your images.
-
-You will need to replace `path/to/game_screenshot.png` and `path/to/agent_vision.png` with the actual paths to your images.
-
----
-
 # AI Agent Capture the Flag Tournament
 
 Welcome to the AI Agent Tournament! Your task is to design and implement an artificial intelligence for a team of agents competing in a game of Capture the Flag.
