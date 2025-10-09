@@ -206,18 +206,19 @@ class Bullet:
         # Move the bullet one step
         self.position = (self.position[0] + self.direction[0], self.position[1] + self.direction[1])
         
-        # Check for collision with an enemy agent at the new position
+        hit_confirmed = False
+        # Check for collision with any enemy agents at the new position
         for agent in agents:
             if agent.position == self.position and agent.color != self.color:
                 agent.take_damage(1)
-                return True # Hit confirmed, bullet is destroyed
+                hit_confirmed = True
                 
         # Check for collision with a wall
         tile = worldmap_buffer[self.position[1]][self.position[0]]
         if tile == ASCII_TILES["wall"]:
             return True # Hit a wall, bullet is destroyed
             
-        return False
+        return hit_confirmed # Destroy bullet if it hit any agent(s)
 
 def _bresenham_line(x1, y1, x2, y2):
     """Yields coordinates of tiles between two locations (line of sight)."""
@@ -273,8 +274,20 @@ class AgentEngine:
         self.agent.terminate(reason)
     
     def take_damage(self, amount):
-        """Reduces the agent's health."""
+        """Reduces the agent's health. If holding a flag, drops it."""
         self.hp -= amount
+
+        if self.holding_flag:
+            # Reset the flag's state, returning it to its spawn
+            self.holding_flag.position = self.holding_flag.spawn_position
+            self.holding_flag.agent_holding = None
+            
+            # Reset the agent's state
+            self.holding_flag = None
+            if self.color == "blue":
+                self.ascii_tile = ASCII_TILES["blue_agent"]
+            else: # red
+                self.ascii_tile = ASCII_TILES["red_agent"]
     
     def heal_and_resupply(self, world):
         """Heals HP and restores ammo if the agent is near its home flag."""

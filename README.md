@@ -20,9 +20,10 @@ There are two ways to win the game:
 
 ## Core Game Mechanics
 
--   **Health (HP):** Agents start with 3 HP and are eliminated when their HP reaches 0. Each bullet hit deals 1 damage.
--   **Ammunition:** Agents start with 5 bullets. Firing a shot consumes one bullet.
--   **Healing & Resupply:** When an agent is within a 3-tile radius of its own flag's original spawn point, it will regain 1 HP and 1 ammo periodically. This allows agents to retreat, recover, and re-engage.
+-   **Health (HP):** Agents start with 3 HP and are eliminated when their HP reaches 0. Each bullet hit deals 1 damage. If multiple enemy agents occupy the same tile, a single bullet hitting that tile will damage all of them.
+-   **Ammunition:** Agents start with 10 bullets. Firing a shot consumes one bullet.
+-   **Healing & Resupply:** When an agent is within a 2-tile radius of its own flag's original spawn point, it will regain 1 HP and 1 ammo periodically. This allows agents to retreat, recover, and re-engage.
+-   **Flag Dropping:** If an agent holding the enemy flag takes damage from a bullet, they will drop the flag. The flag immediately returns to its original spawn point.
 
 ## The `Agent` Class
 

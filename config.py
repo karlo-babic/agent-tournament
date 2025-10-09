@@ -10,13 +10,13 @@ BULLET_UPDATE_INTERVAL = 5
 
 # Agent settings
 AGENT_VISION_RANGE = 4
-SHOOT_COOLDOWN = 4 # Ticks an agent must wait after moving or shooting
+SHOOT_COOLDOWN = 4 # Ticks an agent must wait before shooting
 AGENT_MAX_HP = 3
-AGENT_MAX_AMMO = 5
+AGENT_MAX_AMMO = 10
 
 # Healing and Resupply
-HEAL_RESUPPLY_RATE = 20 # Ticks between each heal/resupply tick
-HEAL_RESUPPLY_RANGE = 3 # Manhattan distance from flag spawn to heal/resupply
+HEAL_RESUPPLY_RATE = 100 # Ticks between each heal/resupply tick
+HEAL_RESUPPLY_RANGE = 2 # Manhattan distance from flag spawn to heal/resupply
 
 # Tile representations
 ASCII_TILES = {
