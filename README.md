@@ -31,7 +31,7 @@ You will be implementing your logic within the `Agent` class in a file named `ag
 
 -   `__init__(self, color, index)`
     -   Called once when your agent is instanced at the beginning of the game. Use it for any initial setup.
--   `update(self, visible_world, position, can_shoot, holding_flag, shared_knowledge)`
+-   `update(self, visible_world, position, can_shoot, holding_flag, shared_knowledge, hp, ammo)`
     -   Called every "agent frame" or tick. This is where your agent's core logic will go.
 -   `terminate(self, reason)`
     -   Called once when this agent is deleted (either because it died, or the game ended).
