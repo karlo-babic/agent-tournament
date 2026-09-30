@@ -31,33 +31,30 @@ class World:
             for xi in [-1, 0, 1]:
                 self.worldmap[y+yi][x+xi] = ASCII_TILES["empty"]
 
-    def _clear_random_path(self, flag_blue_pos, flag_red_pos):
-        position = flag_blue_pos
-        while position[0] < (self.width+1)/2:
+    def _carve_towards(self, position, step_x, target_x):
+        """Clears a random walk from position until it reaches column target_x. Returns where it ended."""
+        while True:
             self.worldmap[position[1]][position[0]] = ASCII_TILES["empty"]
+            if position[0] == target_x:
+                return position
             r = self.rng.random()
             if r > 0.75 and position[1] > 3:
                 position = (position[0], position[1]-1)
             elif r > 0.5 and position[1] < self.height-4:
                 position = (position[0], position[1]+1)
             else:
-                position = (position[0]+1, position[1])
-        position_left = position
-        position = flag_red_pos
-        while position[0] > (self.width-1)/2:
-            self.worldmap[position[1]][position[0]] = ASCII_TILES["empty"]
-            r = self.rng.random()
-            if r > 0.75 and position[1] > 3:
-                position = (position[0], position[1]-1)
-            elif r > 0.5 and position[1] < self.height-4:
-                position = (position[0], position[1]+1)
-            else:
-                position = (position[0]-1, position[1])
-        position_right = position
+                position = (position[0]+step_x, position[1])
 
-        beg_y, end_y = sorted((position_left[1], position_right[1]))
-        for yi in range(beg_y, end_y):
-            self.worldmap[yi][self.width//2] = ASCII_TILES["empty"]
+    def _clear_random_path(self, flag_blue_pos, flag_red_pos):
+        """Guarantees a path between the flags. Each side carves to its own central column (the same column when
+        the width is odd), and both central columns are cleared between the two ends, so neither side is favoured."""
+        left_middle, right_middle = (self.width - 1) // 2, self.width // 2
+        _, left_y = self._carve_towards(flag_blue_pos, 1, left_middle)
+        _, right_y = self._carve_towards(flag_red_pos, -1, right_middle)
+
+        for y in range(min(left_y, right_y), max(left_y, right_y) + 1):
+            for x in (left_middle, right_middle):
+                self.worldmap[y][x] = ASCII_TILES["empty"]
 
     def generate_world(self):
         self.worldmap = [[ASCII_TILES["empty"] for _ in range(self.width)] for _ in range(self.height)]
