@@ -132,9 +132,12 @@ class World:
         for agent in self.agents:
             agent.control(self, team_views[agent.color])
 
+        # Captures are checked against the flags at the start of the step, so the order agents are processed in
+        # doesn't matter. A carrier reaching home captures even if an enemy grabs that flag in the same step.
+        flags_home = {color: not flag.agent_holding for color, flag in self.flags.items()}
         capturing_teams = set()
         for agent in self.agents:
-            if agent.resolve_movement(self):
+            if agent.resolve_movement(self, flags_home):
                 capturing_teams.add(agent.color)
             agent.update_can_shoot()
 
@@ -348,8 +351,9 @@ class AgentEngine:
         elif action == "shoot" and self.can_shoot and self.ammo > 0:
             self._handle_shooting(world, direction)
 
-    def resolve_movement(self, world):
-        """Handles collisions and flag interactions after moving. Returns True if the agent captured the flag."""
+    def resolve_movement(self, world, flags_home):
+        """Handles collisions and flag interactions after moving. Returns True if the agent captured the flag.
+        flags_home tells for each color whether its flag was home at the start of the step."""
         x, y = self.position
         if world.worldmap[y][x] == ASCII_TILES["wall"]:
             self.position = self.prev_position
@@ -362,7 +366,7 @@ class AgentEngine:
             self.holding_flag = enemy_flag
             enemy_flag.agent_holding = self
             self.ascii_tile = ASCII_TILES[f"{self.color}_agent_f"]
-        elif self.position == own_flag.position and not own_flag.agent_holding:
+        elif self.position == own_flag.position and flags_home[self.color]:
             if self.holding_flag:
                 return True
             self.position = self.prev_position
