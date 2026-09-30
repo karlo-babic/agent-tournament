@@ -137,6 +137,7 @@ tournament_project/
 ├── main.py
 ├── tournament.py
 ├── run_tournament.py
+├── game_stats.py
 ├── config.py
 ├── sprites/
 │   ├── ... (image files)
@@ -158,7 +159,7 @@ tournament_project/
 ```bash
 python run_tournament.py my_team other_team path/to/third_team --rounds 20
 ```
-Every pair of teams plays `--rounds` maps, each map once from each side. The script prints the standings and a head-to-head table, and saves every game to `tournament_results.csv` (change with `--output`). The `errors` column counts how many times an agent's `update` raised an exception.
+Every pair of teams plays `--rounds` maps, each map once from each side. The script prints the standings and a head-to-head table, and saves every game to `tournament_results.csv` (change with `--output`). The `errors` column counts how many times an agent's `update` raised an exception. The remaining columns are per-team game statistics (sightings, clear shots, shots, hits, kills, ...) defined in `game_stats.py`.
 
 ### For Testing: Human-Controlled Agent
 

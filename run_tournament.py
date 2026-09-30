@@ -9,10 +9,12 @@ from collections import defaultdict
 from multiprocessing import Pool
 
 from config import *
+from game_stats import COLUMNS as STAT_COLUMNS
 from main import load_agent_class
 from tournament import World
 
-RESULT_FIELDS = ["blue", "red", "seed", "winner", "reason", "ticks", "blue_errors", "red_errors"]
+RESULT_FIELDS = (["blue", "red", "seed", "winner", "reason", "ticks", "first_contact_tick", "blue_errors", "red_errors"]
+                 + STAT_COLUMNS)
 
 
 def play_match(match):
@@ -34,8 +36,10 @@ def play_match(match):
         "winner": winner,
         "reason": reason,
         "ticks": world.tick,
+        "first_contact_tick": world.stats.first_contact_tick,
         "blue_errors": world.error_counts["blue"],
         "red_errors": world.error_counts["red"],
+        **world.stats.as_row(),
     }
 
 

@@ -3,13 +3,7 @@ import copy
 import os
 import traceback
 from config import *
-
-DIRECTIONS = {
-    "right": (1, 0),
-    "left": (-1, 0),
-    "up": (0, -1),
-    "down": (0, 1),
-}
+from game_stats import GameStats
 
 
 class World:
@@ -31,6 +25,7 @@ class World:
 
         self.shared_knowledge = {"blue": {}, "red": {}}
         self.error_counts = {"blue": 0, "red": 0}
+        self.stats = GameStats()
 
     def _clear_area(self, x, y):
         for yi in [-1, 0, 1]:
@@ -159,12 +154,14 @@ class World:
         for bullet in self.bullets:
             targets = [a for a in self.agents if a.position == bullet.position and a.color != bullet.color]
             for agent in targets:
+                self.stats.record_hit(self, bullet, agent)
                 agent.take_damage(1)
             if not targets:
                 remaining_bullets.append(bullet)
         self.bullets = remaining_bullets
 
         for agent in [a for a in self.agents if a.hp <= 0]:
+            self.stats.record_kill(agent)
             agent.terminate(reason="died")
             self.agents.remove(agent)
 
@@ -302,23 +299,27 @@ class AgentEngine:
                         break
         return visible_world
 
-    def _handle_movement(self, direction):
+    def _handle_movement(self, world, direction):
         dx, dy = DIRECTIONS[direction]
         self.position = (self.position[0] + dx, self.position[1] + dy)
         self.can_shoot = False
         self.can_shoot_countdown = SHOOT_COOLDOWN
+        world.stats.record_move(self)
 
     def _handle_shooting(self, world, direction):
         world.bullets.append(Bullet(self.color, self.position, DIRECTIONS[direction]))
         self.ammo -= 1
         self.can_shoot = False
         self.can_shoot_countdown = SHOOT_COOLDOWN
+        world.stats.record_shot(self, direction)
 
     def control(self, world):
         self.prev_position = self.position
+        visible_world = self.get_visible_world(world)
+        world.stats.record_view(world, self, visible_world)
         try:
             action, direction = self.agent.update(
-                self.get_visible_world(world),
+                visible_world,
                 self.position,
                 self.can_shoot,
                 self.holding_flag is not None,
@@ -335,7 +336,7 @@ class AgentEngine:
         if direction not in DIRECTIONS:
             return
         if action == "move":
-            self._handle_movement(direction)
+            self._handle_movement(world, direction)
         elif action == "shoot" and self.can_shoot and self.ammo > 0:
             self._handle_shooting(world, direction)
 

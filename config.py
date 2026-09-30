@@ -18,6 +18,14 @@ AGENT_MAX_AMMO = 10
 HEAL_RESUPPLY_RATE = 100 # Ticks between each heal/resupply tick
 HEAL_RESUPPLY_RANGE = 2 # Manhattan distance from flag spawn to heal/resupply
 
+# Directions agents can move and shoot in
+DIRECTIONS = {
+    "right": (1, 0),
+    "left": (-1, 0),
+    "up": (0, -1),
+    "down": (0, 1),
+}
+
 # Tile representations
 ASCII_TILES = {
     "empty": " ",
