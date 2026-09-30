@@ -10,7 +10,7 @@ BULLET_UPDATE_INTERVAL = 5
 
 # Agent settings
 AGENT_VISION_RANGE = 4
-SHOOT_COOLDOWN = 4 # Ticks an agent must wait before shooting
+SHOOT_COOLDOWN = 4 # Agent updates of standing still needed after moving or shooting before the agent can shoot
 AGENT_MAX_HP = 3
 AGENT_MAX_AMMO = 10
 

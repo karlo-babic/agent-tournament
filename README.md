@@ -16,7 +16,8 @@ Welcome to the AI Agent Tournament! Your task is to design and implement an arti
 There are two ways to win the game:
 1.  Capture the enemy flag and bring it back to your own team's flag.
 2.  Kill all enemy agents.
-3.  The game ends in a tie if the maximum time limit is reached.
+
+The game ends in a tie if the maximum time limit is reached.
 
 ## Core Game Mechanics
 
@@ -72,7 +73,7 @@ The `update` method receives the following arguments on every call:
 
 -   `can_shoot`
     -   A `boolean`. `True` if the shooting cooldown is over and the agent can shoot.
-    -   Cooldown is activated after shooting and/or after moving. The agent must stand still for the cooldown to end.
+    -   Cooldown is activated after shooting and/or after moving. The agent must stand still for the cooldown to end (`SHOOT_COOLDOWN` agent updates in `config.py`).
 
 -   `holding_flag`
     -   A `boolean`. `True` if your agent is currently holding the enemy flag.
@@ -96,6 +97,7 @@ Your `update` method must return two values: an action and a direction.
     -   `"shoot"`: To shoot in the specified direction.
     -   `"move"`: To move one tile in the specified direction.
     -   An empty string (`""`) or `None` will cause the agent to do nothing for that frame.
+    -   If `update` raises an exception, the error is printed and the agent does nothing for that frame.
 
 -   `direction` (string)
     -   `"left"`
@@ -120,7 +122,11 @@ Your `update` method must return two values: an action and a direction.
     ```bash
     python main.py my_team other_team --headless
     ```
-6.  To display an ASCII rendering of the game in the console, use the `--ascii` flag. This is particularly useful when running in headless mode.
+6.  To play on a specific map, pass a seed with `--seed`. The same seed always generates the same world:
+    ```bash
+    python main.py my_team other_team --seed 42
+    ```
+7.  To display an ASCII rendering of the game in the console, use the `--ascii` flag. This is particularly useful when running in headless mode.
     ```bash
     python main.py my_team other_team --headless --ascii
     ```
