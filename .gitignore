@@ -212,3 +212,6 @@ bots/
 # Match results
 results.csv
 tournament_results.csv
+
+# Working notes
+notes.md
