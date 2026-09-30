@@ -186,6 +186,8 @@ You are encouraged to use any/all means to implement a good agent. Some ideas in
 
 > **LIMITATION:** Your agent must be able to run on the classroom computers without significant performance issues.
 
+> **RANDOMNESS:** Do not call `random.seed()`. The global `random` module is shared with the other team's agents, so seeding it affects their behavior too. If you need reproducible randomness, create your own generator, e.g. `self.rng = random.Random(42)`, and use `self.rng.random()`, `self.rng.choice(...)`, etc.
+
 ### Designing a Universal Agent
 Your agent code must be able to function correctly whether it is assigned to the blue or red team. Avoid hardcoding behavior based on color (e.g., `if self.color == "blue": move_right()`).
 
