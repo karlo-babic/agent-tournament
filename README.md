@@ -51,6 +51,7 @@ The `update` method receives the following arguments on every call:
     -   Your agent is always in the center of this grid.
     -   The agent can see a maximum of 4 tiles in each direction (a 9x9 grid).
     -   Areas behind walls are marked as not visible.
+    -   When several things share a tile, you see the most important one: enemy agents over your own agents, and flag carriers over other agents.
     -   **Characters in `visible_world`:**
 
 | Character | Description |

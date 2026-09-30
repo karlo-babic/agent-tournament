@@ -1,5 +1,4 @@
 import random
-import copy
 import os
 import traceback
 from config import *
@@ -94,13 +93,21 @@ class World:
             for index, position in enumerate(positions):
                 self.agents.append(AgentEngine(color, index, position, self.agent_classes[color]))
 
+    def render(self, viewer_color=None):
+        """Draws all objects onto a copy of the map. Where objects share a tile, the more important one is drawn on top:
+        flags, bullets, agents, carriers. For a team's view, enemies are drawn above that team's own agents."""
+        def agent_priority(agent):
+            is_enemy = viewer_color is not None and agent.color != viewer_color
+            return is_enemy, agent.holding_flag is not None
+
+        buffer = [row[:] for row in self.worldmap]
+        ground_flags = [flag for flag in self.flags.values() if not flag.agent_holding]
+        for obj in ground_flags + self.bullets + sorted(self.agents, key=agent_priority):
+            buffer[obj.position[1]][obj.position[0]] = obj.ascii_tile
+        return buffer
+
     def buffer_worldmap(self):
-        self.worldmap_buffer = copy.deepcopy(self.worldmap)
-        for obj in self.bullets + self.agents:
-            self.worldmap_buffer[obj.position[1]][obj.position[0]] = obj.ascii_tile
-        for flag in self.flags.values():
-            if not flag.agent_holding:
-                self.worldmap_buffer[flag.position[1]][flag.position[0]] = flag.ascii_tile
+        self.worldmap_buffer = self.render()
 
     def ascii_display(self):
         os.system('cls' if os.name == 'nt' else 'clear')
@@ -121,8 +128,9 @@ class World:
 
     def update_agents(self):
         # All agents decide based on the same snapshot of the world
+        team_views = {color: self.render(color) for color in ("blue", "red")}
         for agent in self.agents:
-            agent.control(self)
+            agent.control(self, team_views[agent.color])
 
         capturing_teams = set()
         for agent in self.agents:
@@ -277,7 +285,7 @@ class AgentEngine:
             if self.ammo < AGENT_MAX_AMMO:
                 self.ammo += 1
 
-    def get_visible_world(self, world):
+    def get_visible_world(self, world, team_view):
         visible_world = []
 
         for y in range(0, AGENT_VISION_RANGE*2+1):
@@ -286,7 +294,7 @@ class AgentEngine:
             for x in range(0, AGENT_VISION_RANGE*2+1):
                 x_world = self.position[0] + x - AGENT_VISION_RANGE
                 if 0 <= x_world < world.width and 0 <= y_world < world.height:
-                    visible_world[-1].append(world.worldmap_buffer[y_world][x_world])
+                    visible_world[-1].append(team_view[y_world][x_world])
                 else:
                     visible_world[-1].append(ASCII_TILES["unknown"])
 
@@ -313,9 +321,9 @@ class AgentEngine:
         self.can_shoot_countdown = SHOOT_COOLDOWN
         world.stats.record_shot(self, direction)
 
-    def control(self, world):
+    def control(self, world, team_view):
         self.prev_position = self.position
-        visible_world = self.get_visible_world(world)
+        visible_world = self.get_visible_world(world, team_view)
         world.stats.record_view(world, self, visible_world)
         try:
             action, direction = self.agent.update(
