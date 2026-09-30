@@ -30,6 +30,7 @@ class World:
         self.bullets = []
 
         self.shared_knowledge = {"blue": {}, "red": {}}
+        self.error_counts = {"blue": 0, "red": 0}
 
     def _clear_area(self, x, y):
         for yi in [-1, 0, 1]:
@@ -326,6 +327,7 @@ class AgentEngine:
                 self.ammo
             )
         except Exception:
+            world.error_counts[self.color] += 1
             print(f"Error in {self.color} agent {self.index}:")
             traceback.print_exc()
             return

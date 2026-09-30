@@ -136,6 +136,7 @@ Your `update` method must return two values: an action and a direction.
 tournament_project/
 ├── main.py
 ├── tournament.py
+├── run_tournament.py
 ├── config.py
 ├── sprites/
 │   ├── ... (image files)
@@ -150,6 +151,14 @@ tournament_project/
 
 -   Modify `config.py` to change world height, width, tick rate, and other game parameters.
 -   Match results are automatically logged to `results.csv`.
+
+### Running a Tournament
+
+`run_tournament.py` plays a headless round-robin between any number of agent folders, using all CPU cores:
+```bash
+python run_tournament.py my_team other_team path/to/third_team --rounds 20
+```
+Every pair of teams plays `--rounds` maps, each map once from each side. The script prints the standings and a head-to-head table, and saves every game to `tournament_results.csv` (change with `--output`). The `errors` column counts how many times an agent's `update` raised an exception.
 
 ### For Testing: Human-Controlled Agent
 
