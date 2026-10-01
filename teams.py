@@ -12,21 +12,11 @@ from multiprocessing.connection import wait
 from config import *
 
 
-def _is_inside(module, folder):
-    locations = [getattr(module, "__file__", None) or ""] + list(getattr(module, "__path__", []))
-    for location in filter(None, locations):
-        location = os.path.abspath(location)
-        if location == folder or location.startswith(folder + os.sep):
-            return True
-    return False
-
-
 def load_agent_class(folder_path, module_name):
     """Loads the Agent class from folder_path/agent.py.
 
-    Each team is loaded as a separate module, and the team's own helper modules are
-    removed from the import cache afterwards, so two teams can use helper modules
-    with the same name.
+    The team's folder stays on the import path, so the team's code can import its own modules at any time. Because of
+    that, each process loads at most one team.
     """
     folder = os.path.abspath(folder_path)
     agent_file = os.path.join(folder, "agent.py")
@@ -34,23 +24,15 @@ def load_agent_class(folder_path, module_name):
         raise FileNotFoundError(f"Required 'agent.py' not found in folder: {folder_path}")
 
     # The parent folder is added so that imports like `from team_folder.helper import X` work too
-    search_paths = [folder, os.path.dirname(folder)]
-    sys.path[:0] = search_paths
-    try:
-        spec = importlib.util.spec_from_file_location(module_name, agent_file)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-    finally:
-        del sys.path[:len(search_paths)]
-        for name, cached in list(sys.modules.items()):
-            if _is_inside(cached, folder):
-                del sys.modules[name]
-
+    sys.path[:0] = [folder, os.path.dirname(folder)]
+    spec = importlib.util.spec_from_file_location(module_name, agent_file)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
     return module.Agent
 
 
 class LocalTeam:
-    """Runs a team's agents in this process. The GUI uses it, because the human player reads the game window's keyboard.
+    """Runs a team's agents in this process. The GUI uses it for the human player, who reads the game window's keyboard.
 
     A team receives each step's observations as {agent index: (visible_world, position, can_shoot, holding_flag, hp,
     ammo)} and answers with {agent index: (action, direction)}.

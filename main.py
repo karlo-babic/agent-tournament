@@ -60,21 +60,23 @@ class Renderer:
         self.pygame.quit()
 
 
-def make_teams(args):
-    """Headless games run each team in its own process, like the tournament. The GUI runs them in this process,
-    so the human player can read the keyboard."""
-    folders = [args.blue_team_folder, args.red_team_folder]
-    if args.headless:
-        return [ProcessTeam(folder) for folder in folders]
+HUMAN_PLAYER_FOLDER = "human_player"
+
+
+def make_team(folder, color, headless):
+    """Each team runs in its own process, like in the tournament. The human player runs in this process in GUI games,
+    so it can read the game window's keyboard."""
+    if headless or os.path.basename(os.path.normpath(folder)) != HUMAN_PLAYER_FOLDER:
+        return ProcessTeam(folder)
     try:
-        return [LocalTeam(load_agent_class(folder, f"{color}_agent")) for folder, color in zip(folders, ("blue", "red"))]
+        return LocalTeam(load_agent_class(folder, f"{color}_agent"))
     except (ImportError, AttributeError, FileNotFoundError) as e:
         print(f"Error loading agent: {e}")
         sys.exit(1)
 
 
 def main(args):
-    teams = make_teams(args)
+    teams = [make_team(args.blue_team_folder, "blue", args.headless), make_team(args.red_team_folder, "red", args.headless)]
     world = World(HEIGHT, WIDTH, *teams, seed=args.seed)
     try:
         play(world, args)

@@ -46,13 +46,11 @@ You will be implementing your logic within the `Agent` class in a file named `ag
 
 ### Time Limits
 
-In headless games and tournaments, your team has limited time to think (see `config.py`):
+Your team has limited time to think (see `config.py`):
 
 -   `STEP_TIME_LIMIT` (0.1 s): for the `update` calls of all your agents in one step together. If your team takes longer, its agents do nothing that step.
 -   If your team is too slow all the time, or gets stuck (e.g. in an endless loop), it loses the game.
 -   Your team also loses if `agent.py` can't be imported or your code exits the program (e.g. `sys.exit()`).
-
-The GUI has no time limits, so check your agent's speed in headless mode.
 
 ### `Agent.update` Arguments (Inputs)
 
@@ -200,7 +198,7 @@ To play as the blue team's lead agent against an AI opponent, run the simulation
 ```bash
 python main.py human_player other_team
 ```
-> **Note:** The human-controlled agent requires the graphical interface to read keyboard input. You cannot use the `--headless` flag when playing.
+> **Note:** The human-controlled agent requires the graphical interface to read keyboard input. You cannot use the `--headless` flag when playing. The keyboard works only for a team folder named `human_player`, so keep that name if you copy the folder to add your own AI.
 
 ## Implementation Guidelines & Ideas
 
@@ -213,7 +211,7 @@ You are encouraged to use any/all means to implement a good agent. Some ideas in
 
 > **LIMITATION:** Your agent must be able to run on the classroom computers without significant performance issues.
 
-> **RANDOMNESS:** A headless game with the same `--seed` replays exactly, even if your agent uses `random`. Don't call `random.seed()` yourself. If you need your own reproducible randomness, create a generator, e.g. `self.rng = random.Random(42)`, and use `self.rng.random()`, `self.rng.choice(...)`, etc.
+> **RANDOMNESS:** A game with the same `--seed` replays exactly, even if your agent uses `random`. Don't call `random.seed()` yourself. If you need your own reproducible randomness, create a generator, e.g. `self.rng = random.Random(42)`, and use `self.rng.random()`, `self.rng.choice(...)`, etc.
 
 ### Designing a Universal Agent
 Your agent code must be able to function correctly whether it is assigned to the blue or red team. Avoid hardcoding behavior based on color (e.g., `if self.color == "blue": move_right()`).
