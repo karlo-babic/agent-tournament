@@ -122,11 +122,14 @@ Your `update` method must return two values: an action and a direction.
 ## Requirements
 
 -   Python 3.12 or newer.
--   [pygame-ce](https://pyga.me/) for the graphical display. Headless games and tournaments don't need it.
+-   [pygame](https://www.pygame.org/) for the graphical display. Headless games and tournaments don't need it.
+    ```bash
+    pip install pygame
+    ```
+    If `pygame` doesn't install on your system (for example, no package exists yet for a new Python version), use the compatible fork [pygame-ce](https://pyga.me/) instead. Install only one of the two: both are imported as `pygame` and conflict.
     ```bash
     pip install pygame-ce
     ```
-    If you already have `pygame` installed, uninstall it first (`pip uninstall pygame`): both are imported as `pygame` and conflict.
 
 ## Usage Instructions
 
