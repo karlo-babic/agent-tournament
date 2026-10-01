@@ -1,105 +1,65 @@
 # Human Player
 
-""" 
-Description of the agent (approach / strategy / implementation) in short points.
-This agent file creates a hybrid team: one human-controlled agent and two AI agents.
-- The Agent with index 0 on a team is designated as the player.
-- The player agent directly reads keyboard input using Pygame for real-time control:
-    - WASD keys for movement.
-    - Arrow keys for shooting.
-- All other agents (index > 0) fall back to a simple random AI logic.
-- This setup is for testing and debugging, and requires the game to be run with 
-  the GUI enabled (not in --headless mode).
+"""
+A team for testing: you control the agent with index 0, the other two agents play randomly.
+- WASD keys move, arrow keys shoot.
+- Needs the GUI to read the keyboard, so it doesn't work with --headless.
 """
 
 from config import *
 import random
 
 try:
-    # Pygame is used to get keyboard input for the human player.
-    # This will only work if the game is run in graphical mode.
     import pygame
 except ImportError:
     print("Warning: Pygame not found. Human-controlled agent will not work.")
     pygame = None
 
+
 class Agent:
-    
+
     def __init__(self, color, index):
         self.color = color
         self.index = index
-        
-        # Agent with index 0 is designated as the player.
-        self.is_player_controlled = (self.index == 0)
+        self.is_player_controlled = self.index == 0
 
-        # --- Universal Agent Logic Setup (for the two AI agents) ---
-        # Set team-specific goals and identifiers based on the agent's color.
-        # This allows the AI logic to be color-agnostic.
         if self.color == "blue":
             self.attack_direction = "right"
             self.return_direction = "left"
-        else: # red
+        else:
             self.attack_direction = "left"
             self.return_direction = "right"
 
     def _get_player_action(self):
-        """
-        Reads the keyboard state using Pygame and returns the corresponding
-        action and direction for the human-controlled agent.
-        """
+        """Reads the keyboard. Shooting has priority over moving."""
         if not pygame:
-            return "", "" # Do nothing if pygame is not available.
+            return "", ""
 
-        keys = pygame.key.get_pressed()
-        action = ""
-        direction = ""
+        shoot_keys = {pygame.K_UP: "up", pygame.K_DOWN: "down", pygame.K_LEFT: "left", pygame.K_RIGHT: "right"}
+        move_keys = {pygame.K_w: "up", pygame.K_s: "down", pygame.K_a: "left", pygame.K_d: "right"}
 
-        # Shooting has priority over movement. Arrow keys for shooting.
-        if keys[pygame.K_UP]:
-            action, direction = "shoot", "up"
-        elif keys[pygame.K_DOWN]:
-            action, direction = "shoot", "down"
-        elif keys[pygame.K_LEFT]:
-            action, direction = "shoot", "left"
-        elif keys[pygame.K_RIGHT]:
-            action, direction = "shoot", "right"
-        
-        # WASD for movement.
-        elif keys[pygame.K_w]:
-            action, direction = "move", "up"
-        elif keys[pygame.K_s]:
-            action, direction = "move", "down"
-        elif keys[pygame.K_a]:
-            action, direction = "move", "left"
-        elif keys[pygame.K_d]:
-            action, direction = "move", "right"
+        pressed = pygame.key.get_pressed()
+        for action, keys in (("shoot", shoot_keys), ("move", move_keys)):
+            for key, direction in keys.items():
+                if pressed[key]:
+                    return action, direction
+        return "", ""
 
-        return action, direction
-    
     def _get_ai_action(self, holding_flag, can_shoot, hp, ammo):
-        """
-        Contains the random AI logic for the other computer-controlled agents.
-        """
-        # Determine preferred direction based on current objective
-        if holding_flag:
-            preferred_direction = self.return_direction
-        else:
-            preferred_direction = self.attack_direction
+        """Random moves biased towards the current objective, like my_team, but shooting more often."""
+        preferred_direction = self.return_direction if holding_flag else self.attack_direction
 
-        # AI prioritizes survival: if low on health or ammo, it retreats
         if hp < AGENT_MAX_HP / 2 or ammo == 0:
             action = "move"
             preferred_direction = self.return_direction
+        elif can_shoot and random.random() > 0.5:
+            action = "shoot"
+        elif random.random() > 0.3:
+            action = ""
         else:
-            # Otherwise, follow the original random logic
-            if can_shoot and random.random() > 0.5:
-                action = "shoot"
-            elif random.random() > 0.3:
-                action = ""  # do nothing
-            else:
-                action = "move"
-    
-        # Randomly choose a direction, with a bias towards the preferred direction
+            action = "move"
+
+        # A random direction two thirds of the time, otherwise the preferred one
         r = random.random() * 1.5
         if r < 0.25:
             direction = "left"
@@ -111,17 +71,13 @@ class Agent:
             direction = "down"
         else:
             direction = preferred_direction
-            
+
         return action, direction
 
     def update(self, visible_world, position, can_shoot, holding_flag, shared_knowledge, hp, ammo):
-        # If this is the player-controlled agent, get input from the keyboard.
         if self.is_player_controlled:
             return self._get_player_action()
-        
-        # Otherwise, run the standard AI logic for the other two agents.
-        else:
-            return self._get_ai_action(holding_flag, can_shoot, hp, ammo)
+        return self._get_ai_action(holding_flag, can_shoot, hp, ammo)
 
     def terminate(self, reason):
         if reason == "died":
