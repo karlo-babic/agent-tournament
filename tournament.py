@@ -7,7 +7,7 @@ from game_stats import GameStats
 class World:
 
     def __init__(self, height, width, blue_team, red_team, seed=None):
-        """The teams are a LocalTeam or ProcessTeam from teams.py each. The caller closes them after the game."""
+        """blue_team and red_team are LocalTeam or ProcessTeam objects (see teams.py). The caller closes them."""
         self.height = height
         self.width = width
         self.teams = {"blue": blue_team, "red": red_team}
@@ -129,7 +129,7 @@ class World:
         self.tick += 1
 
     def update_agents(self):
-        # All agents decide based on the same snapshot of the world. Both teams think at the same time.
+        # All agents decide based on the same snapshot of the world. The two teams compute their actions in parallel.
         team_views = {color: self.render(color) for color in self.teams}
         observations = {color: {} for color in self.teams}
         for agent in self.agents:

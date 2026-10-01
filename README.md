@@ -17,7 +17,7 @@ There are two ways to win the game:
 1.  Capture the enemy flag and bring it back to your own team's flag.
 2.  Kill all enemy agents.
 
-The game ends in a tie if the maximum time limit is reached. A team whose code crashes the game or is too slow loses (see "Time Limits").
+The game ends in a tie if the maximum time limit is reached. A team whose process crashes or is too slow loses (see "Time Limits").
 
 ## Core Game Mechanics
 

@@ -57,7 +57,7 @@ def schedule(folders, rounds, first_seed):
 def play_all(matches, workers):
     results = []
     report_every = max(1, len(matches) // 100)
-    # Not multiprocessing.Pool: its workers can't start the team processes
+    # multiprocessing.Pool workers can't start the team processes, ProcessPoolExecutor workers can
     with ProcessPoolExecutor(workers) as executor:
         for future in as_completed([executor.submit(play_match, match) for match in matches]):
             results.append(future.result())

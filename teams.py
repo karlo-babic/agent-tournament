@@ -119,7 +119,7 @@ class ProcessTeam:
                                        args=(self.folder, color, agent_count, seed, self.quiet, self.inbox, writer))
         self.process.start()
         writer.close()
-        if self._receive(time.monotonic() + STARTUP_TIME_LIMIT) != "ready" and not self.failed:
+        if self._receive(time.monotonic() + STARTUP_TIME_LIMIT) != "ready":
             self._fail()
 
     def send_observations(self, observations):
@@ -130,6 +130,7 @@ class ProcessTeam:
         self.inbox.put(("update", self.step, observations))
 
     def receive_actions(self):
+        """Returns the answer to the last step, or {} if it doesn't arrive in time. Late answers are dropped."""
         if self.failed:
             return {}
         step, sent_time = self.pending[-1]
