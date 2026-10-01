@@ -10,7 +10,8 @@ BULLET_UPDATE_INTERVAL = 5
 
 # Agent settings
 AGENT_VISION_RANGE = 4
-SHOOT_COOLDOWN = 4 # Agent updates of standing still needed after moving or shooting before the agent can shoot
+SHOOT_COOLDOWN = 4 # Agent updates after a shot before the agent can shoot again
+CARRIER_MOVE_INTERVAL = 2 # Agent updates between two moves of a flag carrier
 AGENT_MAX_HP = 3
 AGENT_MAX_AMMO = 10
 

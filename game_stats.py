@@ -1,9 +1,8 @@
 from collections import Counter
 from config import *
 
-FIELDS = ["agent_steps", "sees_enemy", "enemy_on_tile", "enemy_in_line", "in_line_cooldown_move",
-          "in_line_cooldown_shoot", "in_line_no_ammo", "shots", "aimed_shots", "hits", "hits_near_home",
-          "carrier_hits", "kills"]
+FIELDS = ["agent_steps", "sees_enemy", "enemy_on_tile", "enemy_in_line", "in_line_cooldown", "in_line_no_ammo",
+          "shots", "aimed_shots", "hits", "hits_near_home", "carrier_hits", "kills"]
 COLUMNS = [f"{color}_{field}" for color in ("blue", "red") for field in FIELDS]
 
 DEFENSE_RANGE = 6 # Hits within this Manhattan distance of the shooter's flag count as hits near home
@@ -16,7 +15,6 @@ class GameStats:
         self.counts = {"blue": Counter(), "red": Counter()}
         self.first_contact_tick = None
         self._lined_up = {}  # Agent -> directions with a clear shot at an enemy this step
-        self._cooldown_cause = {}  # Agent -> "move" or "shoot"
 
     def record_view(self, world, agent, visible_world):
         """Counts whether an agent sees an enemy and whether it has a clear shot at one."""
@@ -38,15 +36,11 @@ class GameStats:
             return
         counts["enemy_in_line"] += 1
         if not agent.can_shoot:
-            counts[f"in_line_cooldown_{self._cooldown_cause[agent]}"] += 1
+            counts["in_line_cooldown"] += 1
         elif agent.ammo == 0:
             counts["in_line_no_ammo"] += 1
 
-    def record_move(self, agent):
-        self._cooldown_cause[agent] = "move"
-
     def record_shot(self, agent, direction):
-        self._cooldown_cause[agent] = "shoot"
         self.counts[agent.color]["shots"] += 1
         if direction in self._lined_up.get(agent, ()):
             self.counts[agent.color]["aimed_shots"] += 1

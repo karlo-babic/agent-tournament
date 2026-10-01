@@ -25,6 +25,7 @@ The game ends in a tie if the maximum time limit is reached.
 -   **Ammunition:** Agents start with 10 bullets. Firing a shot consumes one bullet.
 -   **Healing & Resupply:** When an agent is within a 2-tile radius of its own flag's original spawn point, it will regain 1 HP and 1 ammo periodically. This allows agents to retreat, recover, and re-engage.
 -   **Flag Dropping:** If an agent holding the enemy flag takes damage from a bullet, they will drop the flag. The flag immediately returns to its original spawn point.
+-   **Carrier Speed:** An agent holding the enemy flag can move only once every 2 agent updates (`CARRIER_MOVE_INTERVAL` in `config.py`). A move requested earlier is ignored. Bullets move one tile per update, so they can catch a fleeing carrier.
 
 ## The `Agent` Class
 
@@ -74,7 +75,7 @@ The `update` method receives the following arguments on every call:
 
 -   `can_shoot`
     -   A `boolean`. `True` if the shooting cooldown is over and the agent can shoot.
-    -   Cooldown is activated after shooting and/or after moving. The agent must stand still for the cooldown to end (`SHOOT_COOLDOWN` agent updates in `config.py`).
+    -   Cooldown is activated after shooting and lasts `SHOOT_COOLDOWN` agent updates (see `config.py`).
 
 -   `holding_flag`
     -   A `boolean`. `True` if your agent is currently holding the enemy flag.

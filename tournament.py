@@ -250,6 +250,7 @@ class AgentEngine:
 
         self.can_shoot = True
         self.can_shoot_countdown = 0
+        self.steps_since_move = 0
 
         self.holding_flag = None
         self.ascii_tile = ASCII_TILES[f"{color}_agent"]
@@ -310,9 +311,7 @@ class AgentEngine:
     def _handle_movement(self, world, direction):
         dx, dy = DIRECTIONS[direction]
         self.position = (self.position[0] + dx, self.position[1] + dy)
-        self.can_shoot = False
-        self.can_shoot_countdown = SHOOT_COOLDOWN
-        world.stats.record_move(self)
+        self.steps_since_move = 0
 
     def _handle_shooting(self, world, direction):
         world.bullets.append(Bullet(self.color, self.position, DIRECTIONS[direction]))
@@ -321,8 +320,12 @@ class AgentEngine:
         self.can_shoot_countdown = SHOOT_COOLDOWN
         world.stats.record_shot(self, direction)
 
+    def _can_move(self):
+        return not self.holding_flag or self.steps_since_move >= CARRIER_MOVE_INTERVAL
+
     def control(self, world, team_view):
         self.prev_position = self.position
+        self.steps_since_move += 1
         visible_world = self.get_visible_world(world, team_view)
         world.stats.record_view(world, self, visible_world)
         try:
@@ -343,7 +346,7 @@ class AgentEngine:
 
         if direction not in DIRECTIONS:
             return
-        if action == "move":
+        if action == "move" and self._can_move():
             self._handle_movement(world, direction)
         elif action == "shoot" and self.can_shoot and self.ammo > 0:
             self._handle_shooting(world, direction)
