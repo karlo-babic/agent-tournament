@@ -211,7 +211,7 @@ You are encouraged to use any/all means to implement a good agent. Some ideas in
 
 > **LIMITATION:** Your agent must be able to run on the classroom computers without significant performance issues.
 
-> **RANDOMNESS:** A game with the same `--seed` replays exactly, even if your agent uses `random`. Don't call `random.seed()` yourself. If you need your own reproducible randomness, create a generator, e.g. `self.rng = random.Random(42)`, and use `self.rng.random()`, `self.rng.choice(...)`, etc.
+> **RANDOMNESS:** A game with the same `--seed` replays exactly, even if your agent uses `random`, unless your agent uses wall-clock time or calls `random.seed()` without a number.
 
 ### Designing a Universal Agent
 Your agent code must be able to function correctly whether it is assigned to the blue or red team. Avoid hardcoding behavior based on color (e.g., `if self.color == "blue": move_right()`).
