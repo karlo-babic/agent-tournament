@@ -34,7 +34,8 @@ You will be implementing your logic within the `Agent` class in a file named `ag
 -   `__init__(self, color, index)`
     -   Called once when your agent is instanced at the beginning of the game. Use it for any initial setup.
 -   `update(self, visible_world, position, can_shoot, holding_flag, shared_knowledge, hp, ammo)`
-    -   Called every "agent frame" or tick. This is where your agent's core logic will go.
+    -   Called once per agent step (every `AGENT_UPDATE_INTERVAL` ticks) for every living agent. This is where your agent's core logic will go.
+    -   To keep track of time, count the calls to `update`. Don't use wall-clock time (`time.time()`): the game runs at different speeds in GUI and headless mode.
 -   `terminate(self, reason)`
     -   Called once when this agent is deleted (either because it died, or the game ended).
     -   The `reason` argument is a string that can have the following values:
