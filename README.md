@@ -17,7 +17,7 @@ There are two ways to win the game:
 1.  Capture the enemy flag and bring it back to your own team's flag.
 2.  Kill all enemy agents.
 
-The game ends in a tie if the maximum time limit is reached. A team whose process crashes or is too slow loses (see "Time Limits").
+The game ends in a tie if the maximum time limit is reached. A team whose code crashes the game or is too slow loses (see "Time Limits").
 
 ## Core Game Mechanics
 
@@ -34,9 +34,8 @@ You will be implementing your logic within the `Agent` class in a file named `ag
 -   `__init__(self, color, index)`
     -   Called once when your agent is instanced at the beginning of the game. Use it for any initial setup.
 -   `update(self, visible_world, position, can_shoot, holding_flag, shared_knowledge, hp, ammo)`
-    -   Called once per agent step (every `AGENT_UPDATE_INTERVAL` ticks) for every living agent. This is where your agent's core logic will go.
+    -   Called once per step for each of your living agents. This is where your agent's core logic will go.
     -   To keep track of time, count the calls to `update`. Don't use wall-clock time (`time.time()`): the game runs at different speeds in GUI and headless mode.
-    -   The `update` calls of all your agents in one step must together finish within a time limit (see "Time Limits").
 -   `terminate(self, reason)`
     -   Called once when this agent is deleted (either because it died, or the game ended).
     -   The `reason` argument is a string that can have the following values:
@@ -47,13 +46,13 @@ You will be implementing your logic within the `Agent` class in a file named `ag
 
 ### Time Limits
 
-In headless games and tournaments, each team runs in its own process, and the game waits for it only a limited time (see `config.py`):
+In headless games and tournaments, your team has limited time to think (see `config.py`):
 
--   `STEP_TIME_LIMIT`: time for all of your agents' `update` calls in one step. If your team answers later, its agents do nothing that step. Every `update` is still called, in order, so your team falls behind and has to catch up.
--   `LAG_TIME_LIMIT`: if your team falls this far behind (for example, stuck in an endless loop, or always slower than `STEP_TIME_LIMIT`), it is disqualified and loses the game.
--   `STARTUP_TIME_LIMIT`: time for importing your `agent.py` and creating your agents. A team that takes longer, or fails to import, is disqualified.
+-   `STEP_TIME_LIMIT` (0.1 s): for the `update` calls of all your agents in one step together. If your team takes longer, its agents do nothing that step.
+-   If your team is too slow all the time, or gets stuck (e.g. in an endless loop), it loses the game.
+-   Your team also loses if `agent.py` can't be imported or your code exits the program (e.g. `sys.exit()`).
 
-Exiting the process (e.g. `sys.exit()`) also disqualifies your team. The GUI runs both teams in the main process, without time limits.
+The GUI has no time limits, so check your agent's speed in headless mode.
 
 ### `Agent.update` Arguments (Inputs)
 
@@ -186,7 +185,7 @@ tournament_project/
 ```bash
 python run_tournament.py my_team other_team path/to/third_team --rounds 20
 ```
-Every pair of teams plays `--rounds` maps, each map once from each side. The script prints the standings and a head-to-head table, and saves every game to `tournament_results.csv` (change with `--output`). The `errors` column counts how many times an agent's `update` raised an exception. The remaining columns are per-team game statistics (sightings, clear shots, shots, hits, kills, ...) defined in `game_stats.py`.
+Every pair of teams plays `--rounds` maps, each map once from each side. The script prints the standings and a head-to-head table, and saves every game to `tournament_results.csv`, including how often each team's `update` raised an exception (`errors`) and statistics such as shots, hits and kills.
 
 ### For Testing: Human-Controlled Agent
 
@@ -214,7 +213,7 @@ You are encouraged to use any/all means to implement a good agent. Some ideas in
 
 > **LIMITATION:** Your agent must be able to run on the classroom computers without significant performance issues.
 
-> **RANDOMNESS:** In headless games and tournaments, your team's `random` module is seeded from the map seed, so a headless game with the same `--seed` replays exactly (as long as your agent doesn't use wall-clock time). In the GUI, both teams share one `random` module, so don't call `random.seed()`; if you need your own reproducible randomness, create a generator, e.g. `self.rng = random.Random(42)`, and use `self.rng.random()`, `self.rng.choice(...)`, etc.
+> **RANDOMNESS:** A headless game with the same `--seed` replays exactly, even if your agent uses `random`. Don't call `random.seed()` yourself. If you need your own reproducible randomness, create a generator, e.g. `self.rng = random.Random(42)`, and use `self.rng.random()`, `self.rng.choice(...)`, etc.
 
 ### Designing a Universal Agent
 Your agent code must be able to function correctly whether it is assigned to the blue or red team. Avoid hardcoding behavior based on color (e.g., `if self.color == "blue": move_right()`).
