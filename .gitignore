@@ -206,13 +206,11 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-# Example bots
-bots/
-
 # Match results
 results.csv
 tournament_results.csv
 
-# Working notes
+# Local files
+bots/
 notes.md
 archive/

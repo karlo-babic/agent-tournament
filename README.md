@@ -119,6 +119,15 @@ Your `update` method must return two values: an action and a direction.
     -   `"up"`
     -   `"down"`
 
+## Requirements
+
+-   Python 3.12 or newer.
+-   [pygame-ce](https://pyga.me/) for the graphical display. Headless games and tournaments don't need it.
+    ```bash
+    pip install pygame-ce
+    ```
+    If you already have `pygame` installed, uninstall it first (`pip uninstall pygame`): both are imported as `pygame` and conflict.
+
 ## Usage Instructions
 
 1.  **Create a folder for your agent** (e.g., `my_team`).
