@@ -31,8 +31,8 @@ class Agent:
             self.return_direction = "right"
 
     def _get_player_action(self):
-        """Reads the keyboard. Shooting has priority over moving."""
-        if not pygame:
+        """Reads the keyboard of the game window. Shooting has priority over moving."""
+        if not pygame or not pygame.display.get_init():
             return "", ""
 
         shoot_keys = {pygame.K_UP: "up", pygame.K_DOWN: "down", pygame.K_LEFT: "left", pygame.K_RIGHT: "right"}
