@@ -19,6 +19,11 @@ AGENT_MAX_AMMO = 10
 HEAL_RESUPPLY_RATE = 100 # Ticks between each heal/resupply tick
 HEAL_RESUPPLY_RANGE = 2 # Manhattan distance from flag spawn to heal/resupply
 
+# Time limits of a team in headless games and tournaments (in seconds)
+STEP_TIME_LIMIT = 0.1 # For all of a team's updates in one agent step; a team that answers later does nothing that step
+LAG_TIME_LIMIT = 5 # A team that falls this far behind (stuck in a step, or always too slow) is disqualified
+STARTUP_TIME_LIMIT = 10 # For loading agent.py and creating the agents; a slower team is disqualified
+
 # Directions agents can move and shoot in
 DIRECTIONS = {
     "right": (1, 0),

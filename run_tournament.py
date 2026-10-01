@@ -1,16 +1,14 @@
 import argparse
-import contextlib
 import csv
-import io
 import itertools
 import os
 import sys
 from collections import defaultdict
-from multiprocessing import Pool
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from config import *
 from game_stats import COLUMNS as STAT_COLUMNS
-from main import load_agent_class
+from teams import ProcessTeam
 from tournament import World
 
 RESULT_FIELDS = (["blue", "red", "seed", "winner", "reason", "ticks", "first_contact_tick", "blue_errors", "red_errors"]
@@ -20,13 +18,16 @@ RESULT_FIELDS = (["blue", "red", "seed", "winner", "reason", "ticks", "first_con
 def play_match(match):
     """Plays one headless game and returns its result. Agent output is suppressed."""
     blue_folder, red_folder, seed = match
-    with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-        world = World(HEIGHT, WIDTH, load_agent_class(blue_folder, "blue_agent"),
-                      load_agent_class(red_folder, "red_agent"), seed=seed)
+    teams = [ProcessTeam(blue_folder, quiet=True), ProcessTeam(red_folder, quiet=True)]
+    world = World(HEIGHT, WIDTH, *teams, seed=seed)
+    try:
         world.generate_world()
         while not world.win:
             world.step()
         world.terminate_agents()
+    finally:
+        for team in teams:
+            team.close()
 
     winner, reason = world.win
     return {
@@ -56,9 +57,10 @@ def schedule(folders, rounds, first_seed):
 def play_all(matches, workers):
     results = []
     report_every = max(1, len(matches) // 100)
-    with Pool(workers) as pool:
-        for result in pool.imap_unordered(play_match, matches):
-            results.append(result)
+    # Not multiprocessing.Pool: its workers can't start the team processes
+    with ProcessPoolExecutor(workers) as executor:
+        for future in as_completed([executor.submit(play_match, match) for match in matches]):
+            results.append(future.result())
             if len(results) % report_every == 0 or len(results) == len(matches):
                 print(f"\rPlayed {len(results)}/{len(matches)} games", end="", file=sys.stderr)
     print(file=sys.stderr)

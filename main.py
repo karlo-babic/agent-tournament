@@ -1,9 +1,9 @@
 import sys
 import argparse
-import importlib.util
 import os
 import time
 from tournament import World
+from teams import LocalTeam, ProcessTeam, load_agent_class
 from config import *
 
 
@@ -14,43 +14,6 @@ def log_match_result(blue_agent_name, red_agent_name, winner, reason):
             f.write(f"{blue_agent_name},{red_agent_name},{winner},{reason}\n")
     except IOError as e:
         print(f"Error writing to log file: {e}")
-
-
-def _is_inside(module, folder):
-    locations = [getattr(module, "__file__", None) or ""] + list(getattr(module, "__path__", []))
-    for location in filter(None, locations):
-        location = os.path.abspath(location)
-        if location == folder or location.startswith(folder + os.sep):
-            return True
-    return False
-
-
-def load_agent_class(folder_path, module_name):
-    """Loads the Agent class from folder_path/agent.py.
-
-    Each team is loaded as a separate module, and the team's own helper modules are
-    removed from the import cache afterwards, so two teams can use helper modules
-    with the same name.
-    """
-    folder = os.path.abspath(folder_path)
-    agent_file = os.path.join(folder, "agent.py")
-    if not os.path.isfile(agent_file):
-        raise FileNotFoundError(f"Required 'agent.py' not found in folder: {folder_path}")
-
-    # The parent folder is added so that imports like `from team_folder.helper import X` work too
-    search_paths = [folder, os.path.dirname(folder)]
-    sys.path[:0] = search_paths
-    try:
-        spec = importlib.util.spec_from_file_location(module_name, agent_file)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-    finally:
-        del sys.path[:len(search_paths)]
-        for name, cached in list(sys.modules.items()):
-            if _is_inside(cached, folder):
-                del sys.modules[name]
-
-    return module.Agent
 
 
 class Renderer:
@@ -97,17 +60,31 @@ class Renderer:
         self.pygame.quit()
 
 
-def main(args):
+def make_teams(args):
+    """Headless games run each team in its own process, like the tournament. The GUI runs them in this process,
+    so the human player can read the keyboard."""
+    folders = [args.blue_team_folder, args.red_team_folder]
+    if args.headless:
+        return [ProcessTeam(folder) for folder in folders]
     try:
-        blue_agent_class = load_agent_class(args.blue_team_folder, "blue_agent")
-        red_agent_class = load_agent_class(args.red_team_folder, "red_agent")
+        return [LocalTeam(load_agent_class(folder, f"{color}_agent")) for folder, color in zip(folders, ("blue", "red"))]
     except (ImportError, AttributeError, FileNotFoundError) as e:
         print(f"Error loading agent: {e}")
         sys.exit(1)
 
-    renderer = None if args.headless else Renderer(WIDTH, HEIGHT)
 
-    world = World(HEIGHT, WIDTH, blue_agent_class, red_agent_class, seed=args.seed)
+def main(args):
+    teams = make_teams(args)
+    world = World(HEIGHT, WIDTH, *teams, seed=args.seed)
+    try:
+        play(world, args)
+    finally:
+        for team in teams:
+            team.close()
+
+
+def play(world, args):
+    renderer = None if args.headless else Renderer(WIDTH, HEIGHT)
     world.generate_world()
 
     while not world.win:

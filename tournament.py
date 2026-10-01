@@ -1,16 +1,16 @@
 import random
 import os
-import traceback
 from config import *
 from game_stats import GameStats
 
 
 class World:
 
-    def __init__(self, height, width, blue_agent_class, red_agent_class, seed=None):
+    def __init__(self, height, width, blue_team, red_team, seed=None):
+        """The teams are a LocalTeam or ProcessTeam from teams.py each. The caller closes them after the game."""
         self.height = height
         self.width = width
-        self.agent_classes = {"blue": blue_agent_class, "red": red_agent_class}
+        self.teams = {"blue": blue_team, "red": red_team}
         self.rng = random.Random(seed)
 
         self.tick = 0
@@ -22,9 +22,11 @@ class World:
         self.flags = {}
         self.bullets = []
 
-        self.shared_knowledge = {"blue": {}, "red": {}}
-        self.error_counts = {"blue": 0, "red": 0}
         self.stats = GameStats()
+
+    @property
+    def error_counts(self):
+        return {color: team.error_count for color, team in self.teams.items()}
 
     def _clear_area(self, x, y):
         for yi in [-1, 0, 1]:
@@ -87,8 +89,11 @@ class World:
         self._clear_random_path(flag_positions["blue"], flag_positions["red"])
 
         for color, positions in spawn_positions.items():
+            team = self.teams[color]
+            team.start(color, len(positions), seed=self.rng.getrandbits(32))
             for index, position in enumerate(positions):
-                self.agents.append(AgentEngine(color, index, position, self.agent_classes[color]))
+                self.agents.append(AgentEngine(color, index, position, team))
+        self.check_failed_teams()
 
     def render(self, viewer_color=None):
         """Draws all objects onto a copy of the map. Where objects share a tile, the more important one is drawn on top:
@@ -124,10 +129,18 @@ class World:
         self.tick += 1
 
     def update_agents(self):
-        # All agents decide based on the same snapshot of the world
-        team_views = {color: self.render(color) for color in ("blue", "red")}
+        # All agents decide based on the same snapshot of the world. Both teams think at the same time.
+        team_views = {color: self.render(color) for color in self.teams}
+        observations = {color: {} for color in self.teams}
         for agent in self.agents:
-            agent.control(self, team_views[agent.color])
+            observations[agent.color][agent.index] = agent.observe(self, team_views[agent.color])
+        for color, team in self.teams.items():
+            team.send_observations(observations[color])
+        actions = {color: team.receive_actions() for color, team in self.teams.items()}
+        if self.check_failed_teams():
+            return
+        for agent in self.agents:
+            agent.act(self, actions[agent.color].get(agent.index))
 
         # Captures are checked against the flags at the start of the step, so the order agents are processed in
         # doesn't matter. A carrier reaching home captures even if an enemy grabs that flag in the same step.
@@ -172,6 +185,15 @@ class World:
             self.stats.record_kill(agent)
             agent.terminate(reason="died")
             self.agents.remove(agent)
+
+    def check_failed_teams(self):
+        """Disqualifies teams whose process crashed or fell too far behind. Returns True if any did."""
+        failed = [color for color, team in self.teams.items() if team.failed]
+        if len(failed) == 2:
+            self.win = ("tied", "mutual_disqualification")
+        elif failed:
+            self.win = ("red" if failed[0] == "blue" else "blue", "disqualification")
+        return bool(failed)
 
     def check_win_state(self):
         if self.win: return
@@ -238,7 +260,7 @@ def _bresenham_line(x1, y1, x2, y2):
 
 class AgentEngine:
 
-    def __init__(self, color, index, position, agent_class):
+    def __init__(self, color, index, position, team):
         self.color = color
         self.enemy_color = "red" if color == "blue" else "blue"
         self.index = index
@@ -255,14 +277,11 @@ class AgentEngine:
         self.holding_flag = None
         self.ascii_tile = ASCII_TILES[f"{color}_agent"]
 
-        self.agent = agent_class(self.color, self.index)
+        self.team = team
 
     def terminate(self, reason):
         self._drop_flag()
-        try:
-            self.agent.terminate(reason)
-        except Exception:
-            traceback.print_exc()
+        self.team.terminate(self.index, reason)
 
     def _drop_flag(self):
         """Returns a held flag to its spawn point."""
@@ -323,27 +342,19 @@ class AgentEngine:
     def _can_move(self):
         return not self.holding_flag or self.steps_since_move >= CARRIER_MOVE_INTERVAL
 
-    def control(self, world, team_view):
-        self.prev_position = self.position
-        self.steps_since_move += 1
+    def observe(self, world, team_view):
+        """Returns what the agent's update method receives, apart from the team's shared knowledge."""
         visible_world = self.get_visible_world(world, team_view)
         world.stats.record_view(world, self, visible_world)
-        try:
-            action, direction = self.agent.update(
-                visible_world,
-                self.position,
-                self.can_shoot,
-                self.holding_flag is not None,
-                world.shared_knowledge[self.color],
-                self.hp,
-                self.ammo
-            )
-        except Exception:
-            world.error_counts[self.color] += 1
-            print(f"Error in {self.color} agent {self.index}:")
-            traceback.print_exc()
-            return
+        return visible_world, self.position, self.can_shoot, self.holding_flag is not None, self.hp, self.ammo
 
+    def act(self, world, decision):
+        """Carries out the (action, direction) returned by the agent, or nothing if decision is None."""
+        self.prev_position = self.position
+        self.steps_since_move += 1
+        if decision is None:
+            return
+        action, direction = decision
         if direction not in DIRECTIONS:
             return
         if action == "move" and self._can_move():
